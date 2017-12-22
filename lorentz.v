@@ -1,8 +1,10 @@
 `include "fpu_double.v"
 
-module lorentz(clk,reset);
+module lorentz(clk,reset,x_next,y_next,z_next);
 input clk,reset;
-reg [63:0] a,b,c,x,y,z,x_next,y_next,z_next,temp,temp1;
+output reg [63:0] x_next,y_next,z_next;
+reg [63:0] a,b,c,x,y,z,temp,temp1;
+reg [5:0] state;
 
 
 // ----- fpu double registers--------
@@ -39,16 +41,6 @@ Rounding Modes (rmode):
 3 = round_down  */
 
 
-initial
-begin
-	a 		= 	64'h4024000000000000; //a = 10
-	b 		= 	64'h403C000000000000; //b = 28
-	c 		= 	64'h4005555555555555; //c = 8/3
-	x		=	64'h3F1F75104D551D69; //0.00012 
-	y		=	64'h3F2A36E2EB1C432D; //0.00020
-	z 		=	64'h3F1797CC39FFD60F; //0.00009 
-	rmode	=	0;
-end
 
 
 /*
@@ -65,6 +57,13 @@ else
 begin
 case (state)
 file_setup:	begin
+				a 			= 	64'h4024000000000000; //a = 10
+				b 			= 	64'h403C000000000000; //b = 28
+				c 			= 	64'h4005555555555555; //c = 8/3
+				x			=	64'h3F1F75104D551D69; //0.00012 
+				y			=	64'h3F2A36E2EB1C432D; //0.00020
+				z 			=	64'h3F1797CC39FFD60F; //0.00009 
+				rmode		=	1;
 				rst_fpu		=	0;			
 				fpu_op		=	1;
 				enable_fpu	=	0;
@@ -246,5 +245,5 @@ all_update:	begin
 			end
 
 endcase  
-end	
+end
 endmodule

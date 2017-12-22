@@ -3,7 +3,7 @@
 module lorentz(clk,reset,x_next,y_next,z_next);
 input clk,reset;
 output reg [63:0] x_next,y_next,z_next;
-reg [63:0] a,b,c,x,y,z,temp,temp1;
+reg [63:0] a,b,c,x,y,z,h,temp,temp1;
 reg [5:0] state;
 
 
@@ -22,7 +22,9 @@ wire inexact;
 wire exception;
 
 parameter		file_setup = 0, x_begin = 1, x_wait1 =  2, x_mul = 3, x_wait2 = 4, y_wait1 = 5, y_wait2 = 6, y_begin = 7, y_wait3 = 8, y_mul = 9, y_sub = 10,
-				z_wait1 = 11, z_wait2 = 12, z_wait3 = 13, z_begin = 14, z_mul = 15, z_sub = 16, all_update = 17;
+				z_wait1 = 11, z_wait2 = 12, z_wait3 = 13, z_begin = 14, z_mul = 15, z_sub = 16, x_update = 17, x_update_wait1 = 18, x_update_wait2 = 19,
+				x_update_add = 20, y_update = 21, y_update_wait1 = 22, y_update_wait2 = 23, y_update_add = 24, z_update = 25, z_update_wait1 = 26, z_update_wait2 = 27,
+				z_update_add = 28;
 fpu_double u1	(.clk(clk),.rst(rst_fpu),.enable(enable_fpu),.rmode(rmode),.fpu_op(fpu_op),.opa(opa),.opb(opb),.out(fpout),.ready( fpu_ready),
 				.overflow(overflow),.underflow(underflow),.inexact(inexact), .exception(exception), .invalid(exception));	
 
@@ -60,9 +62,10 @@ file_setup:	begin
 				a 			= 	64'h4024000000000000; //a = 10
 				b 			= 	64'h403C000000000000; //b = 28
 				c 			= 	64'h4005555555555555; //c = 8/3
-				x			=	64'h3F1F75104D551D69; //0.00012 
-				y			=	64'h3F2A36E2EB1C432D; //0.00020
-				z 			=	64'h3F1797CC39FFD60F; //0.00009 
+				x			=	64'h4019058A7000CFFC; //6.2554109097 
+				y			=	64'hC01B80A0933EFEC7; //-6.8756125457
+				z 			=	64'h4007024DB53DDA99; //2.8761247787 
+				h    		=	64'h3F747AE147AE147B; //0.005
 				rmode		=	1;
 				rst_fpu		=	0;			
 				fpu_op		=	1;
@@ -230,20 +233,139 @@ z_wait3:	begin
 					z_next		= 	fpout; // z_next = (x * y) - (c * z)
 					enable_fpu	=	1'b0;
 			    	rst_fpu		=	1'b1;
-					state 		= 	all_update; 				
+					state 		= 	x_update; 				
 				end
 				else 
 				begin								
 					state		=	z_wait3; 	
 				end		
 			end
-all_update:	begin
-				x 		= 	x_next;
-				y 		= 	y_next;
-				z 		= 	z_next;
-				state	=	x_begin;
+x_update:	begin
+				rst_fpu		=	0;
+			    fpu_op		=	2;
+				opa			=	h; 
+				opb			=	x_next;  
+				enable_fpu	=	1'b1;			
+				state		=	x_update_wait1;
 			end
-
+x_update_wait1:	begin
+					if(fpu_ready 	==	1'b1)
+					begin
+						temp		= 	fpout; // z_next = (x * y) - (c * z)
+						enable_fpu	=	1'b0;
+			    		rst_fpu		=	1'b1;
+						state 		= 	x_update_add; 				
+					end
+					else 
+					begin								
+						state		=	x_update_wait1; 	
+					end		
+				end
+x_update_add:	begin
+					rst_fpu		=	0;
+			    	fpu_op		=	0;
+					opa			=	x; 
+					opb			=	temp;  
+					enable_fpu	=	1'b1;			
+					state		=	x_update_wait2;
+				end
+x_update_wait2:	begin
+					if(fpu_ready 	==	1'b1)
+					begin
+						x			= 	fpout; // z_next = (x * y) - (c * z)
+						enable_fpu	=	1'b0;
+			    		rst_fpu		=	1'b1;
+						state 		= 	y_update; 				
+					end
+					else 
+					begin								
+						state		=	x_update_wait2; 	
+					end		
+				end
+y_update:	begin
+				rst_fpu		=	0;
+			    fpu_op		=	2;
+				opa			=	h; 
+				opb			=	y_next;  
+				enable_fpu	=	1'b1;			
+				state		=	y_update_wait1;
+			end
+y_update_wait1:	begin
+					if(fpu_ready 	==	1'b1)
+					begin
+						temp		= 	fpout; // z_next = (x * y) - (c * z)
+						enable_fpu	=	1'b0;
+			    		rst_fpu		=	1'b1;
+						state 		= 	y_update_add; 				
+					end
+					else 
+					begin								
+						state		=	y_update_wait1; 	
+					end		
+				end
+y_update_add:	begin
+					rst_fpu		=	0;
+			    	fpu_op		=	0;
+					opa			=	y; 
+					opb			=	temp;  
+					enable_fpu	=	1'b1;			
+					state		=	y_update_wait2;
+				end
+y_update_wait2:	begin
+					if(fpu_ready 	==	1'b1)
+					begin
+						y			= 	fpout; // z_next = (x * y) - (c * z)
+						enable_fpu	=	1'b0;
+			    		rst_fpu		=	1'b1;
+						state 		= 	z_update; 				
+					end
+					else 
+					begin								
+						state		=	y_update_wait2; 	
+					end		
+				end
+z_update:	begin
+				rst_fpu		=	0;
+			    fpu_op		=	2;
+				opa			=	h; 
+				opb			=	z_next;  
+				enable_fpu	=	1'b1;			
+				state		=	z_update_wait1;
+			end
+z_update_wait1:	begin
+					if(fpu_ready 	==	1'b1)
+					begin
+						temp		= 	fpout; // z_next = (x * y) - (c * z)
+						enable_fpu	=	1'b0;
+			    		rst_fpu		=	1'b1;
+						state 		= 	z_update_add; 				
+					end
+					else 
+					begin								
+						state		=	z_update_wait1; 	
+					end		
+				end
+z_update_add:	begin
+					rst_fpu		=	0;
+			    	fpu_op		=	0;
+					opa			=	z; 
+					opb			=	temp;  
+					enable_fpu	=	1'b1;			
+					state		=	z_update_wait2;
+				end
+z_update_wait2:	begin
+					if(fpu_ready 	==	1'b1)
+					begin
+						z			= 	fpout; // z_next = (x * y) - (c * z)
+						enable_fpu	=	1'b0;
+			    		rst_fpu		=	1'b1;
+						state 		= 	x_begin; 				
+					end
+					else 
+					begin								
+						state		=	z_update_wait2; 	
+					end		
+				end
 endcase  
 end
 endmodule

@@ -29,7 +29,15 @@ reg x_clock,y_clock,z_clock;
 reg [15:0] x_data,y_data,z_data;
 reg x_wren,y_wren,z_wren;
 reg [15:0] x_q,y_q,z_q;
+
 reg [16:0] value_count;
+
+
+
+
+
+
+
 
 
 parameter		file_setup = 0, x_begin = 1, x_wait1 =  2, x_mul = 3, x_wait2 = 4, y_wait1 = 5, y_wait2 = 6, y_begin = 7, y_wait3 = 8, y_mul = 9, y_sub = 10,

@@ -1,10 +1,10 @@
-`include "fpu_double.v"
+//`include "fpu_double.v"
 
 module lorentz(clk,reset,x_next,y_next,z_next);
 input clk,reset;
 output reg [63:0] x_next,y_next,z_next;
 reg [63:0] a,b,c,x,y,z,h,temp,temp1;
-reg [5:0] state;
+reg [7:0] state;
 
 
 // ----- fpu double registers--------
@@ -24,34 +24,32 @@ wire exception;
 
 // -------Block Ram Registers--------
 
-reg [15:0] x_address,y_address,z_address;
-reg x_clock,y_clock,z_clock;
-reg [15:0] x_data,y_data,z_data;
-reg x_wren,y_wren,z_wren;
-reg [15:0] x_q,y_q,z_q;
-
+reg [15:0] x_address,y_address,z_address,i_address;
+reg x_clock,y_clock,z_clock,i_clock;
+reg [15:0] x_data,y_data,z_data,i_data;
+reg x_wren,y_wren,z_wren,i_wren;
+reg [15:0] x_q,y_q,z_q,i_q;
 reg [16:0] value_count;
-
-
-
-
-
-
-
+reg [15:0] temp_1,temp_2;
 
 
 parameter		file_setup = 0, x_begin = 1, x_wait1 =  2, x_mul = 3, x_wait2 = 4, y_wait1 = 5, y_wait2 = 6, y_begin = 7, y_wait3 = 8, y_mul = 9, y_sub = 10,
 				z_wait1 = 11, z_wait2 = 12, z_wait3 = 13, z_begin = 14, z_mul = 15, z_sub = 16, x_update = 17, x_update_wait1 = 18, x_update_wait2 = 19,
 				x_update_add = 20, y_update = 21, y_update_wait1 = 22, y_update_wait2 = 23, y_update_add = 24, z_update = 25, z_update_wait1 = 26, z_update_wait2 = 27,
-				z_update_add = 28, store_values2 = 29, store_values1 = 30,start_confusion_1 = 31 ;
+				z_update_add = 28, store_values2 = 29, store_values1 = 30,start_confusion_1 = 31, read_con1_1 = 32, read_con1_2 = 33, read_con1_3 = 34,
+				read_con1_4 = 35, wait_con1_1 = 36, wait_con1_2 = 37, wait_con1_3 = 38, wait_con1_4 = 39, write_con1_1 = 40, write_con1_2 = 41, write_con1_3 = 42,
+				write_con1_4 = 43, start_confusion_2 = 44, read_con2_1 = 45, read_con2_2 = 46, read_con2_3 = 47,read_con2_4 = 48, wait_con2_1 = 49, 
+				wait_con2_2 = 50, wait_con2_3 = 51, wait_con2_4 = 52, write_con2_1 = 53, write_con2_2 = 54, write_con2_3 = 55,write_con2_4 = 56,start_diffusion = 57,
+				read_diff_1 = 58, read_diff_2 = 59, wait_diff_1 = 60, wait_diff_2 = 61, write_diff_1 = 62, write_diff_2 = 63, end_state = 64;
 
 				
 fpu_double 	u1	(.clk(clk),.rst(rst_fpu),.enable(enable_fpu),.rmode(rmode),.fpu_op(fpu_op),.opa(opa),.opb(opb),.out(fpout),.ready( fpu_ready),
 				.overflow(overflow),.underflow(underflow),.inexact(inexact), .exception(exception), .invalid(exception));	
 				
-x_values	u2	(.address(x_address),.clock(x_clock),.data(x_data),.wren(x_wren),.q(x_q));	
-y_values	u3	(.address(y_address),.clock(y_clock),.data(y_data),.wren(y_wren),.q(y_q));	
-z_values	u4	(.address(z_address),.clock(z_clock),.data(z_data),.wren(z_wren),.q(z_q));		
+x_value	u2	(.address(x_address),.clock(x_clock),.data(x_data),.wren(x_wren),.q(x_q));	
+y_value	u3	(.address(y_address),.clock(y_clock),.data(y_data),.wren(y_wren),.q(y_q));	
+z_value	u4	(.address(z_address),.clock(z_clock),.data(z_data),.wren(z_wren),.q(z_q));		
+i_values	u5	(.address(i_address),.clock(i_clock),.data(i_data),.wren(i_wren),.q(i_q));		
 
 	
 
@@ -406,6 +404,9 @@ z_update_wait2:	begin
 						state		=	z_update_wait2; 	
 					end		
 				end
+				
+// -------------Storing values in block ram----------------
+				
 store_values1:	begin
 					x_data	=	x[15:0];
 					y_data	=	y[15:0];
@@ -429,7 +430,271 @@ store_values2:	begin
 					end
 					state		=	start_confusion_1;
 				end
+				
+// -----------------Confusion using x_value--------------------				
 
+start_confusion_1:
+				begin
+					value_count	=	0;
+					x_address	=	0;
+					y_address	=	0;
+					z_address	=	0;
+					i_address	=	0;
+					x_clock		=	0;
+					y_clock		=	0;
+					z_clock		=	0;
+					i_clock		=	0;
+					x_wren		=	0;
+					y_wren		=	0;
+					z_wren		=	0;
+					i_wren		=	0;
+					state		=	read_con1_1;
+				end
+read_con1_1:		begin
+					x_clock		=	1;
+					i_clock		=	1;
+					state		=	wait_con1_1;
+				end
+wait_con1_1:	begin
+					x_clock		=	0;
+					i_clock		=	0;
+					state		=	read_con1_2;
+				end
+				
+
+read_con1_2:	begin			
+					x_clock		=	1;
+					i_clock		=	1;
+					i_address	=	x_q;
+					temp_1		=	i_q;
+					state		=	wait_con1_2;							
+				end
+wait_con1_2:	begin
+					x_clock		=	0;
+					i_clock		=	0;
+					state		=	read_con1_3;
+				end
+				
+read_con1_3:	begin
+					i_clock		=	1;
+					state		=	wait_con1_3;
+				end
+wait_con1_3:	begin
+					i_clock		=	0;
+					state		=	read_con1_4;
+				end				
+				
+				
+read_con1_4:	begin
+					i_clock		=	1;
+					temp_2		=	i_q;
+					state		=	wait_con1_4;
+				end
+wait_con1_4:	begin
+					i_clock		=	0;
+					state		=	write_con1_1;
+				end				
+				
+				
+write_con1_1:	begin
+					i_wren		=	1;
+					i_data		=	temp_1;
+					i_clock		=	1;
+					state		=	write_con1_2;
+				end
+write_con1_2:	begin
+					i_clock		=	0;
+					state		=	write_con1_3;
+				end
+write_con1_3:	begin
+					i_address	=	value_count;
+					i_data		=	temp_2;
+					i_clock		=	1;
+					state		=	write_con1_4;
+				end
+write_con1_4:	begin
+					
+					i_clock		=	0;
+					value_count	=	value_count + 1;
+					if(value_count 	<	65536)
+					begin
+						x_address	=	value_count;
+						i_address	=	value_count;
+						x_wren		=	0;
+						i_wren		=	0;
+						state		=	read_con1_1;
+					end
+					else
+					begin
+						state		=	start_diffusion;
+					end
+				end
+// -------------Diffusion using y_value------------
+start_diffusion:
+				begin
+					value_count	=	0;
+					x_address	=	0;
+					y_address	=	0;
+					z_address	=	0;
+					i_address	=	0;
+					x_clock		=	0;
+					y_clock		=	0;
+					z_clock		=	0;
+					i_clock		=	0;
+					x_wren		=	0;
+					y_wren		=	0;
+					z_wren		=	0;
+					i_wren		=	0;
+					state		=	read_diff_1;
+				end
+read_diff_1:	begin
+					y_clock		=	1;
+					i_clock		=	1;
+					y_wren		=	0;
+					i_wren		=	0;
+					state		=	wait_diff_1;
+				end
+wait_diff_1:	begin
+					y_clock		=	0;
+					i_clock		=	0;
+					state		=	read_diff_2;
+				end
+read_diff_2:	begin
+					y_clock		=	1;
+					i_clock		=	1;
+					temp_1		=	x_q;
+					temp_2		=	i_q;
+					state		=	wait_diff_2;							
+				end
+wait_diff_2:	begin
+					x_clock		=	0;
+					i_clock		=	0;
+					temp_1		=	temp_1 ^ temp_2;
+					state		=	write_diff_1;
+				end
+write_diff_1:	begin
+					i_wren		=	1;
+					i_data		=	temp_1;
+					i_clock		=	1;
+					state		=	write_diff_2;
+				end
+write_diff_2:	begin
+					i_clock		=	0;
+					value_count	=	value_count + 1;
+					if(value_count 	<	65536)
+					begin
+						y_address	=	value_count;
+						i_address	=	value_count;
+						y_wren		=	0;
+						i_wren		=	0;
+						state		=	read_diff_1;
+					end
+					else
+					begin
+						state		=	start_confusion_2;
+					end
+				end
+// -----------------Confusion using z_value--------------------	
+start_confusion_1:
+				begin
+					value_count	=	0;
+					x_address	=	0;
+					y_address	=	0;
+					z_address	=	0;
+					i_address	=	0;
+					x_clock		=	0;
+					y_clock		=	0;
+					z_clock		=	0;
+					i_clock		=	0;
+					x_wren		=	0;
+					y_wren		=	0;
+					z_wren		=	0;
+					i_wren		=	0;
+					state		=	read_con2_1;
+				end
+read_con2_1:		begin
+					z_clock		=	1;
+					i_clock		=	1;
+					state		=	wait_con2_1;
+				end
+wait_con2_1:	begin
+					z_clock		=	0;
+					i_clock		=	0;
+					state		=	read_con2_2;
+				end
+				
+
+read_con2_2:	begin			
+					z_clock		=	1;
+					i_clock		=	1;
+					i_address	=	z_q;
+					temp_1		=	i_q;
+					state		=	wait_con2_2;							
+				end
+wait_con2_2:	begin
+					z_clock		=	0;
+					i_clock		=	0;
+					state		=	read_con2_3;
+				end
+				
+read_con2_3:	begin
+					i_clock		=	1;
+					state		=	wait_con2_3;
+				end
+wait_con2_3:	begin
+					i_clock		=	0;
+					state		=	read_con2_4;
+				end				
+				
+				
+read_con2_4:	begin
+					i_clock		=	1;
+					temp_2		=	i_q;
+					state		=	wait_con2_4;
+				end
+wait_con2_4:	begin
+					i_clock		=	0;
+					state		=	write_con2_1;
+				end				
+				
+				
+write_con2_1:	begin
+					i_wren		=	1;
+					i_data		=	temp_1;
+					i_clock		=	1;
+					state		=	write_con2_2;
+				end
+write_con2_2:	begin
+					i_clock		=	0;
+					state		=	write_con2_3;
+				end
+write_con2_3:	begin
+					i_address	=	value_count;
+					i_data		=	temp_2;
+					i_clock		=	1;
+					state		=	write_con2_4;
+				end
+write_con2_4:	begin
+					
+					i_clock		=	0;
+					value_count	=	value_count + 1;
+					if(value_count 	<	65536)
+					begin
+						z_address	=	value_count;
+						i_address	=	value_count;
+						z_wren		=	0;
+						i_wren		=	0;
+						state		=	read_con2_1;
+					end
+					else
+					begin
+						state		=	end_state;
+					end
+				end
+end_state:		begin
+					state			=	end_state;
+				end	
+				
 endcase  
 end
 endmodule

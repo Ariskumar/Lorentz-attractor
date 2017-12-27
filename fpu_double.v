@@ -34,12 +34,13 @@
 
 
 `timescale 1ns / 100ps
-`include "fpu_add.v"
+/*`include "fpu_add.v"
 `include "fpu_sub.v"
 `include "fpu_mul.v"
 `include "fpu_div.v"
 `include "fpu_exceptions.v"
-`include "fpu_round.v"
+`include "fpu_round.v" */
+
 /* FPU Operations (fpu_op):
 ========================
 0 = add

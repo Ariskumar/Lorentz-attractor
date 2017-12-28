@@ -1,8 +1,9 @@
 //`include "fpu_double.v"
 
-module lorentz(clk,reset,x_next,y_next,z_next);
+module lorentz(clk,reset,led);
 input clk,reset;
-output reg [63:0] x_next,y_next,z_next;
+output reg led;
+reg [63:0] x_next,y_next,z_next;
 reg [63:0] a,b,c,x,y,z,h,temp,temp1;
 reg [7:0] state;
 
@@ -79,7 +80,10 @@ z = xy - c z
 
 always@(posedge clk)
 if(reset)
-state=file_setup;
+begin
+	led		=	0;
+	state	=	file_setup;
+end
 else
 begin
 case (state)
@@ -107,7 +111,7 @@ file_setup:	begin
 				z_clock		=	0;
 				z_wren		=	1;
 				value_count	=	0;
-				
+				led			=	0;
 				state		=	x_begin;
 			end
 x_begin:	begin
@@ -595,7 +599,7 @@ write_diff_2:	begin
 					end
 				end
 // -----------------Confusion using z_value--------------------	
-start_confusion_1:
+start_confusion_2:
 				begin
 					value_count	=	0;
 					x_address	=	0;
@@ -692,6 +696,7 @@ write_con2_4:	begin
 					end
 				end
 end_state:		begin
+					led				=	1;
 					state			=	end_state;
 				end	
 				

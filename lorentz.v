@@ -81,7 +81,7 @@ z = xy - c z
 always@(posedge clk)
 if(reset)
 begin
-	led		=	0;
+	led		=	1;	//active low
 	state	=	file_setup;
 end
 else
@@ -96,7 +96,7 @@ file_setup:	begin
 				z 			=	64'h4007024DB53DDA99; //2.8761247787 
 				h    		=	64'h3F747AE147AE147B; //0.005
 				
-				rmode		=	1;
+				rmode		=	0;
 				rst_fpu		=	0;			
 				fpu_op		=	1;
 				enable_fpu	=	0;
@@ -111,7 +111,7 @@ file_setup:	begin
 				z_clock		=	0;
 				z_wren		=	1;
 				value_count	=	0;
-				led			=	0;
+				led			=	1;	//active low
 				state		=	x_begin;
 			end
 x_begin:	begin
@@ -432,7 +432,9 @@ store_values2:	begin
 					begin	
 						state 	= 	x_begin; 
 					end
-					state		=	start_confusion_1;
+					else begin
+						state		=	start_confusion_1;
+					end
 				end
 				
 // -----------------Confusion using x_value--------------------				
@@ -566,12 +568,12 @@ wait_diff_1:	begin
 read_diff_2:	begin
 					y_clock		=	1;
 					i_clock		=	1;
-					temp_1		=	x_q;
+					temp_1		=	y_q;
 					temp_2		=	i_q;
 					state		=	wait_diff_2;							
 				end
 wait_diff_2:	begin
-					x_clock		=	0;
+					y_clock		=	0;
 					i_clock		=	0;
 					temp_1		=	temp_1 ^ temp_2;
 					state		=	write_diff_1;
@@ -696,7 +698,7 @@ write_con2_4:	begin
 					end
 				end
 end_state:		begin
-					led				=	1;
+					led				=	0;
 					state			=	end_state;
 				end	
 				
